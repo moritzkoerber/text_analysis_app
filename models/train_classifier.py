@@ -2,7 +2,14 @@ import sys
 import argparse
 import pandas as pd
 from sqlalchemy import create_engine
-from sklearn.model_evaluation import train_test_split
+from sklearn.model_selection import train_test_split
+from nltk.tokenize import sent_tokenize, word_tokenize
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+nltk.download('maxent_ne_chunker')
+from nltk import ne_chunk
 
 parser = argparse.ArgumentParser(description='Processes the data.')
 
@@ -16,8 +23,6 @@ def load_data(database_filepath):
     Y = df.drop(['id', 'message', 'original'], axis = 1)
     category_names = Y.columns
     return X, Y, category_names
-
-
 
 def tokenize(text):
     pass
