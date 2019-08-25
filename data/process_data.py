@@ -28,7 +28,7 @@ def clean_data(df):
     df.dropna(how = 'all', axis = 0, inplace = True)
 
     for col in df[cats.columns]:
-        df[col] = np.where(df[col].str.contains('1'), 1 , 0)
+        df[col] = np.where(df[col].str.contains('1'), 1, 0)
         # if df[col].sum() == 0:
         #     df.drop(col, axis = 1, inplace = True)
         # if df[col].sum() == 1:
@@ -37,7 +37,11 @@ def clean_data(df):
     print("{} rows have duplicates and will be deleted.".format(df.duplicated().sum()))
     df.drop_duplicates(inplace=True)
 
+    # drop rows that are completely empty
+    df.dropna(how = 'all', axis = 0, inplace=True)
+
     return df
+
 
 def save_data(df, database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
@@ -60,12 +64,12 @@ def main():
 
         print('Cleaning data...')
         df = clean_data(df)
-        
+
         print('Saving data...\n    DATABASE: {}'.format(database_filepath))
         save_data(df, database_filepath)
-        
+
         print('Cleaned data saved to database!')
-    
+
     else:
         print('Please provide the filepaths of the messages and categories '\
               'datasets as the first and second argument respectively, as '\
