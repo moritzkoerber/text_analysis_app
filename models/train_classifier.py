@@ -1,5 +1,3 @@
-from sklearn.naive_bayes import GaussianNB
-import sklearn.svm
 from sklearn.pipeline import Pipeline
 import sys
 import argparse
@@ -7,16 +5,17 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sqlalchemy import create_engine
-from sklearn.model_selection import train_test_split
 import string
 from nltk.tokenize import word_tokenize
 import nltk
 from nltk.corpus import stopwords
-from sklearn.model_selection import RandomizedSearchCV, RepeatedStratifiedKFold, GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, RepeatedKFold
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
-import sklearn.svm
+from sklearn.svm import LinearSVC
+import pickle
+from sklearn.metrics import accuracy_score, f1_score
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -29,6 +28,7 @@ parser.add_argument(
     action='store',
     metavar="['/path/to/database.db']",
     help='Provide the location of the database')
+
 parser.add_argument(
     'model_filepath',
     action='store',
@@ -40,7 +40,7 @@ def load_data(database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql_table('data', engine)
     X = df['message']
-    Y = df.drop(['id', 'message', 'original'], axis=1)
+    Y = df.drop(['id', 'message', 'original', 'genre'], axis=1)
     category_names = Y.columns
     return X, Y, category_names
 
@@ -60,23 +60,32 @@ def build_model():
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
 
-    parameters = [{"clf": [RandomForestClassifier()], "clf__n_estimators": list(range(50, 500))},
-                  {"clf": [sklearn.svm.LinearSVC()], 'clf__C': [1, 10, 100, 1000]},
-                  {"clf": [GaussianNB()]}]
+    parameters = [
+        {"clf": [RandomForestClassifier()],
+         "clf__n_estimators": [10, 100, 250],
+         "clf__max_depth":[8],
+         "clf__min_samples_leaf":[5,10],
+         "clf__random_state":[42]},
+        {"clf": [LinearSVC()],
+         "clf__C": [1.0, 10.0, 100.0, 1000.0],
+         "clf__random_state":[42]},
+        {"clf": [GaussianNB()]}
+    ]
 
-    n_iter_search = 20
+    n_iter_search = 1
 
-    rskf = RepeatedStratifiedKFold(
-        n_splits=10,
-        n_repeats=2,
+    rkf = RepeatedKFold(
+        n_splits=5,
+        n_repeats=1,
         random_state=1337
     )
 
     cv = GridSearchCV(
         pipeline,
-        param_grid=parameters,
-        #n_iter=n_iter_search,
-        cv=rskf,
+        parameters,
+        # n_iter=n_iter_search,
+        cv=rkf,
+        scoring='accuracy',
         n_jobs=-1)
 
     return cv
@@ -87,7 +96,8 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    pass
+    with open(model_filepath, 'wb') as f:
+        pickle.dump(model, f)
 
 
 def main():
@@ -101,19 +111,22 @@ def main():
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
 
         X, Y, category_names = load_data(database_filepath)
-        print(Y)
 
         print('Building model...')
         model = build_model()
 
         print('Training model...')
-        model.fit(X, Y["genre"])
+        model.fit(X, Y)
 
         print('Evaluating model...')
         #evaluate_model(model, X_test, Y_test, category_names)
 
+        print("Best score: %0.3f" % model.best_score_)
+        print("Best parameters set:{}".format(
+            print(model.best_estimator_.get_params()["clf"])))
+
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        #save_model(model, model_filepath)
+        save_model(model, model_filepath)
 
         print('Trained model saved!')
 
