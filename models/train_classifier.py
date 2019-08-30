@@ -44,7 +44,7 @@ rm = set(stopwords.words('english'))
 def load_data(database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql_table('data', engine)
-    X = df[['message', 'len', 'genre_news', 'genre_social']]
+    X = df[['message', 'len']]
     Y = df.drop(['id', 'message', 'original', 'len',
                  'genre_news', 'genre_social'], axis=1)
     category_names = Y.columns
@@ -77,29 +77,29 @@ def build_model():
     ])
 
     parameters = [
-        {'clf': [RandomForestClassifier()],
-         'clf_n_estimators': [5, 50, 100, 250],
-         'clf__max_depth': [5, 8, 10],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
-         'clf__random_state':[42]
-         },
+        # {'clf': [RandomForestClassifier()],
+        #  'clf_n_estimators': [5, 50, 100, 250],
+        #  'clf__max_depth': [5, 8, 10],
+        #  'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+        #  'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+        #  'clf__random_state':[42]
+        #  },
         {'clf': [MultiOutputClassifier(LinearSVC())],
          'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
          'clf__estimator__max_iter': [5000],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+         # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
          'clf__estimator__random_state': [42]
          },
-        {'clf': [MultiOutputClassifier(MultinomialNB())],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
+        {'clf': [MultiOutputClassifier(MultinomialNB())]
+         #'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         #'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
          }
     ]
 
     rkf = RepeatedKFold(
-        n_splits=5,
-        n_repeats=2,
+        n_splits=3,
+        n_repeats=1,
         random_state=42
     )
 
@@ -130,15 +130,6 @@ def save_model(model, model_filepath):
     with open(model_filepath, 'wb') as f:
         pickle.dump(model, f)
 
-
-def remove_constants(Y):
-    drops = []
-    for col in Y.columns:
-        if len(np.unique(Y[col])) < 2:
-            drops.append(col)
-    Y.drop(drops, axis=1, inplace=True)
-
-
 def main():
     if len(sys.argv) == 3:
         args = parser.parse_args()
@@ -149,8 +140,6 @@ def main():
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
 
         X, Y, category_names = load_data(database_filepath)
-
-        remove_constants(Y)
 
         print('Building model...')
         model = build_model()

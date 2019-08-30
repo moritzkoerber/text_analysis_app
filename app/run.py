@@ -2,6 +2,9 @@ import json
 import plotly
 import pandas as pd
 import numpy as np
+import string
+import nltk
+from nltk.corpus import stopwords
 
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
@@ -11,6 +14,13 @@ from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar, Histogram
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('maxent_ne_chunker')
+nltk.download('wordnet')
+
+rm = set(stopwords.words('english'))
 
 app = Flask(__name__)
 
@@ -83,18 +93,20 @@ def index():
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
     
     # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    return render_template('/templates/master.html', ids=ids, graphJSON=graphJSON)
 
 
 # web page that handles user query and displays model results
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
+    length = len(query)
+    input = pd.DataFrame({'message':query,'len':length}, index=[1])
 
     # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
-    classification_results = dict(zip(df.columns[4:], classification_labels))
+    classification_labels = model.predict(input)[0]
+    classification_results = dict(zip(df.columns[3:-3], classification_labels))
 
     # This will render the go.html Please see that file. 
     return render_template(

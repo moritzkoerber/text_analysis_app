@@ -6,8 +6,8 @@ from sqlalchemy import create_engine
 
 parser = argparse.ArgumentParser(description='Processes the data.')
 
-parser.add_argument('messages_filepath', action='store', metavar="['/path/to/messages_data_file.csv']",help='Provide the location of the messages .csv file')
-parser.add_argument('categories_filepath', action='store', metavar="['/path/to/categories_data_file.csv']",help='Provide the location of the categories .csv file')
+parser.add_argument('messages_filepath', action='store', metavar="['/path/to/messages_data_file.csv']",help='Provide the location of the messages.csv file')
+parser.add_argument('categories_filepath', action='store', metavar="['/path/to/categories_data_file.csv']",help='Provide the location of the categories.csv file')
 parser.add_argument('database_filepath', action='store', metavar="['/path/to/database.db']",help='Provide the location of the database where the cleaned data file will be stored')
 
 def load_data(messages_filepath, categories_filepath):
@@ -41,6 +41,13 @@ def clean_data(df):
 
     # drop rows that are completely empty
     df.dropna(how = 'all', axis = 0, inplace=True)
+
+    # remove_constants
+    drops = []
+    for col in df.columns:
+        if len(df[col].value_counts()) < 2:
+            drops.append(col)
+    df.drop(drops, axis=1, inplace=True)
 
     return df
 
