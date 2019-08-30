@@ -1,37 +1,35 @@
 import json
 import plotly
 import pandas as pd
+import numpy as np
 
+import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
+from plotly.graph_objs import Bar, hist
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
-
 
 app = Flask(__name__)
 
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    text = text.lower().strip()
+    text = word_tokenize(text)
+    text = list(set(text) - rm)
+    #text = [SnowballStemmer('english').stem(w) for w in text]
+    text = [WordNetLemmatizer().lemmatize(w) for w in text]
+    return text
 
 # load data
-engine = create_engine('sqlite:///../data/database.db')
+engine = create_engine('sqlite:///./data/database.db')
 df = pd.read_sql_table('data', engine)
 
 # load model
-model = joblib.load("../models/model.pkl")
-
+model = joblib.load("./models/model.pkl")
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
@@ -40,8 +38,9 @@ def index():
     
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
+    df['genre_direct'] = np.where(df[['genre_social', 'genre_news']].sum(axis=1) == 0, 1, 0)
+    genre_counts = df[['genre_social', 'genre_news', 'genre_direct']].sum()
+    genre_names = ['genre_social', 'genre_news', 'genre_direct']
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
@@ -61,6 +60,20 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Histogram(
+                    x=df['len']
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Lengths',
+                'xaxis': {
+                    'title': "Length of Message"
                 }
             }
         }
