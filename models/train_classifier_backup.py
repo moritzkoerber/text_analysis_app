@@ -18,8 +18,6 @@ from sklearn.svm import LinearSVC
 import pickle
 from sklearn.metrics import accuracy_score, f1_score
 from nltk.stem.wordnet import WordNetLemmatizer
-#from skmultilearn.problem_transform import ClassifierChain
-from sklearn.compose import ColumnTransformer
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -42,11 +40,10 @@ parser.add_argument(
 
 rm = set(stopwords.words('english'))
 
-
 def load_data(database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql_table('data', engine)
-    X = df[['message', 'len', 'genre_news', 'genre_social']]
+    X = df['message']
     Y = df.drop(['id', 'message', 'original', 'len',
                  'genre_news', 'genre_social'], axis=1)
     category_names = Y.columns
@@ -62,46 +59,37 @@ def tokenize(text):
     text = [WordNetLemmatizer().lemmatize(w) for w in text]
     return text
 
-
-text_transformer = Pipeline([
-    ('vecttext', CountVectorizer(tokenizer=tokenize)),
-    ('tfidf', TfidfTransformer())
-])
-
-preprocessor = ColumnTransformer(
-    [('text', text_transformer, 'message')], remainder='passthrough')
-
-
 def build_model():
     pipeline = Pipeline([
-        ('preprocessor', preprocessor),
+        ('vecttext', CountVectorizer(tokenizer=tokenize)),
+        ('tfidf', TfidfTransformer()),
         ('clf', RandomForestClassifier())
     ])
 
     parameters = [
-        {'clf': [RandomForestClassifier()],
-         'clf_n_estimators': [5, 50, 100, 250],
-         'clf__max_depth': [5, 8, 10],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
-         'clf__random_state':[42]
-         },
-        {'clf': [MultiOutputClassifier(LinearSVC())],
-         'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
-         'clf__estimator__max_iter': [5000],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
-         'clf__estimator__random_state': [42]
-         },
-        {'clf': [MultiOutputClassifier(MultinomialNB())],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
+        # {'clf': [RandomForestClassifier()],
+        #  'clf__estimator__n_estimators': [1],
+        #  'clf__estimator__max_depth': [8],
+        # 'vecttext__max_df': [0.5, 0.75, 1.0],
+        # 'vecttext__ngram_range': [(1, 1), (1, 2)],
+        #  'clf__estimator__random_state':[42]
+        #  }
+        # {'clf': [MultiOutputClassifier(LinearSVC())],
+        #  'clf__estimator__C': [1, 10, 100],
+        #  'clf__estimator__max_iter': [5000],
+        #  'vecttext__max_df': [0.5, 0.75, 1.0],
+        #  'vecttext__ngram_range': [(1, 1), (1, 2)],
+        #  'clf__estimator__random_state': [42]
+        #  }
+        {'clf': [MultiOutputClassifier(MultinomialNB())]
+         #'vecttext__max_df': [0.5, 0.75, 1.0],
+         #'vecttext__ngram_range': [(1, 1), (1, 2)],
          }
     ]
 
     rkf = RepeatedKFold(
-        n_splits=5,
-        n_repeats=2,
+        n_splits=3,
+        n_repeats=1,
         random_state=42
     )
 
@@ -109,7 +97,7 @@ def build_model():
         pipeline,
         parameters,
         cv=rkf,
-        scoring=['f1_weighted', 'f1_micro', 'f1_samples'],
+        scoring = ['f1_weighted','f1_micro', 'f1_samples'],
         refit='f1_weighted',
         n_jobs=-1)
 
@@ -118,15 +106,13 @@ def build_model():
 
 def evaluate_model(model):
     print('Best score:{}'.format(model.best_score_))
-    print('Best parameters set:{}'.format(
-        model.best_estimator_.get_params()['clf']))
+    print('Best parameters set:{}'.format(model.best_estimator_.get_params()['clf']))
     df = pd.DataFrame.from_dict(model.cv_results_)
     print('mean_test_f1_weighted:{}'.format(df['mean_test_f1_weighted']))
     print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
     print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
     print('mean_test_f1_samples:{}'.format(df['mean_test_f1_samples']))
-    # print('mean_test_roc_auc:{}'.format(df['mean_test_roc_auc']))
-
+    #print('mean_test_roc_auc:{}'.format(df['mean_test_roc_auc']))
 
 def save_model(model, model_filepath):
     with open(model_filepath, 'wb') as f:
