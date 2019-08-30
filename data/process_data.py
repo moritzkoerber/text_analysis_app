@@ -27,6 +27,8 @@ def clean_data(df):
     df.dropna(how = 'all', axis = 1, inplace = True)
     df.dropna(how = 'all', axis = 0, inplace = True)
 
+    df = pd.get_dummies(df, columns=['genre'], drop_first=True)
+
     for col in df[cats.columns]:
         df[col] = np.where(df[col].str.contains('1'), 1, 0)
         # if df[col].sum() == 0:
@@ -42,6 +44,9 @@ def clean_data(df):
 
     return df
 
+def feature_creation(df):
+    df['len'] = df['message'].apply(len)
+    return df
 
 def save_data(df, database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
@@ -64,6 +69,7 @@ def main():
 
         print('Cleaning data...')
         df = clean_data(df)
+        df = feature_creation(df)
 
         print('Saving data...\n    DATABASE: {}'.format(database_filepath))
         save_data(df, database_filepath)

@@ -18,6 +18,8 @@ from sklearn.svm import LinearSVC
 import pickle
 from sklearn.metrics import accuracy_score, f1_score
 from nltk.stem.wordnet import WordNetLemmatizer
+from skmultilearn.problem_transform import ClassifierChain
+from sklearn.compose import ColumnTransformer
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -29,17 +31,16 @@ parser = argparse.ArgumentParser(description='Processes the data.')
 parser.add_argument(
     'database_filepath',
     action='store',
-    metavar="['/path/to/database.db']",
+    metavar='["/path/to/database.db"]',
     help='Provide the location of the database')
 
 parser.add_argument(
     'model_filepath',
     action='store',
-    metavar="['/path/to/model']",
+    metavar='["/path/to/model"]',
     help='Provide the destination of the produced pickle file')
 
-rm = set(stopwords.words("english"))
-
+rm = set(stopwords.words('english'))
 
 def load_data(database_filepath):
     engine = create_engine('sqlite:///{}'.format(database_filepath))
@@ -55,10 +56,12 @@ def tokenize(text):
     text = text.lower().strip()
     text = word_tokenize(text)
     text = list(set(text) - rm)
-    #text = [SnowballStemmer("english").stem(w) for w in text]
+    #text = [SnowballStemmer('english').stem(w) for w in text]
     text = [WordNetLemmatizer().lemmatize(w) for w in text]
     return text
-
+preprocess = make_column_transformer(
+    (numerical_features, make_pipeline(SimpleImputer(), StandardScaler())),
+    (categorical_features, OneHotEncoder()))
 
 def build_model():
     pipeline = Pipeline([
@@ -68,25 +71,26 @@ def build_model():
     ])
 
     parameters = [
-        # {"clf": [RandomForestClassifier()],
-        #  "clf__estimator__n_estimators": [1],
-        #  "clf__estimator__max_depth": [8],
-        #  "clf__estimator__random_state":[42]}
-        {"clf": [OneVsRestClassifier(LinearSVC())],
-         "clf__estimator__C": [1, 10],
-         "clf__estimator__max_iter": [5000],
-         #'vecttext__max_df': [0.5, 0.75, 1.0],
-         #'vecttext__ngram_range': [(1, 1), (1, 2)],
-         "clf__estimator__random_state": [42]
-         },
-        {"clf": [OneVsRestClassifier(MultinomialNB())],
-         #'vecttext__max_df': [0.5, 0.75, 1.0],
-         #'vecttext__ngram_range': [(1, 1), (1, 2)],
-         "clf__estimator__random_state": [42]
+        # {'clf': [RandomForestClassifier()],
+        #  'clf__estimator__n_estimators': [1],
+        #  'clf__estimator__max_depth': [8],
+        # 'vecttext__max_df': [0.5, 0.75, 1.0],
+        # 'vecttext__ngram_range': [(1, 1), (1, 2)],
+        #  'clf__estimator__random_state':[42]
+        #  }
+        {'clf': [MultiOutputClassifier(LinearSVC())],
+         'clf__estimator__C': [1, 10, 100],
+         'clf__estimator__max_iter': [5000],
+         'vecttext__max_df': [0.5, 0.75, 1.0],
+         'vecttext__ngram_range': [(1, 1), (1, 2)],
+         'clf__estimator__random_state': [42]
          }
+        #{'clf': [MultiOutputClassifier(MultinomialNB())],
+         #'vecttext__max_df': [0.5, 0.75, 1.0],
+         #'vecttext__ngram_range': [(1, 1), (1, 2)],
+         #'clf__estimator__random_state': [42]
+         #}
     ]
-
-    n_iter_search = 20
 
     rkf = RepeatedKFold(
         n_splits=3,
@@ -97,19 +101,23 @@ def build_model():
     cv = GridSearchCV(
         pipeline,
         parameters,
-        # n_iter=n_iter_search,
         cv=rkf,
-        scoring='f1_micro',# ['f1_micro', 'f1_samples','roc_auc'],
+        scoring = ['f1_weighted','f1_micro', 'f1_samples'],
+        refit='f1_weighted',
         n_jobs=-1)
 
     return cv
 
 
 def evaluate_model(model):
-    print("Results:")
-    print(model.cv_results_)
-    print("Best parameters set:{}".format(model.best_estimator_.get_params()["clf"]))
-
+    print('Best score:{}'.format(model.best_score_))
+    print('Best parameters set:{}'.format(model.best_estimator_.get_params()['clf']))
+    df = pd.DataFrame.from_dict(model.cv_results_)
+    print('mean_test_f1_weighted:{}'.format(df['mean_test_f1_weighted']))
+    print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
+    print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
+    print('mean_test_f1_samples:{}'.format(df['mean_test_f1_samples']))
+    #print('mean_test_roc_auc:{}'.format(df['mean_test_roc_auc']))
 
 def save_model(model, model_filepath):
     with open(model_filepath, 'wb') as f:
