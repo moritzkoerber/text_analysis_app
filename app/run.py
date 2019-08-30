@@ -24,11 +24,11 @@ def tokenize(text):
     return text
 
 # load data
-engine = create_engine('sqlite:///./data/database.db')
+engine = create_engine('sqlite:///../data/database.db')
 df = pd.read_sql_table('data', engine)
 
 # load model
-model = joblib.load("./models/model.pkl")
+model = joblib.load("../models/model.pkl")
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
@@ -61,21 +61,21 @@ def index():
                     'title': "Genre"
                 }
             }
-        },
-        {
-            'data': [
-                Histogram(
-                    x=df['len']
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Lengths',
-                'xaxis': {
-                    'title': "Length of Message"
-                }
-            }
         }
+        # {
+        #     'data': [
+        #         Histogram(
+        #             x=df['len']
+        #         )
+        #     ],
+        #
+        #     'layout': {
+        #         'title': 'Distribution of Message Lengths',
+        #         'xaxis': {
+        #             'title': "Length of Message"
+        #         }
+        #     }
+        # }
     ]
     
     # encode plotly graphs in JSON
