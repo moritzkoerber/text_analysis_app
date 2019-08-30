@@ -9,14 +9,12 @@ import string
 from nltk.tokenize import word_tokenize
 import nltk
 from nltk.corpus import stopwords
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, RepeatedKFold
+from sklearn.model_selection import GridSearchCV, RepeatedKFold
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 import pickle
-from sklearn.metrics import accuracy_score, f1_score
 from nltk.stem.wordnet import WordNetLemmatizer
 #from skmultilearn.problem_transform import ClassifierChain
 from sklearn.compose import ColumnTransformer
