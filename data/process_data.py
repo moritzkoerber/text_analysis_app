@@ -19,7 +19,7 @@ def load_data(messages_filepath, categories_filepath):
 def clean_data(df):
     # concat
     cats = df['categories'].str.split(pat = ';', expand = True)
-    cats.columns =  cats.loc[0].apply(lambda x: x.replace(x[-2:],''))
+    cats.columns = cats.loc[0].apply(lambda x: x.replace(x[-2:],''))
     df = df.drop('categories', axis = 1)
     df = pd.concat([df, cats], axis = 1)
 

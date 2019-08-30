@@ -71,21 +71,21 @@ def index():
                     'title': "Genre"
                 }
             }
+        },
+        {
+            'data': [
+                Histogram(
+                    x=df['len']
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Lengths',
+                'xaxis': {
+                    'title': "Length of Message"
+                }
+            }
         }
-        # {
-        #     'data': [
-        #         Histogram(
-        #             x=df['len']
-        #         )
-        #     ],
-        #
-        #     'layout': {
-        #         'title': 'Distribution of Message Lengths',
-        #         'xaxis': {
-        #             'title': "Length of Message"
-        #         }
-        #     }
-        # }
     ]
     
     # encode plotly graphs in JSON
