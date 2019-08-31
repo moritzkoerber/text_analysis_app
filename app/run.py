@@ -22,14 +22,13 @@ nltk.download('wordnet')
 
 rm = set(stopwords.words('english'))
 
-app = Flask(__name__)
+app = Flask(__name__) #template_folder='templates'
 
 def tokenize(text):
     text = text.translate(str.maketrans('', '', string.punctuation))
     text = text.lower().strip()
     text = word_tokenize(text)
     text = list(set(text) - rm)
-    #text = [SnowballStemmer('english').stem(w) for w in text]
     text = [WordNetLemmatizer().lemmatize(w) for w in text]
     return text
 
@@ -46,13 +45,11 @@ model = joblib.load("../models/model.pkl")
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     df['genre_direct'] = np.where(df[['genre_social', 'genre_news']].sum(axis=1) == 0, 1, 0)
     genre_counts = df[['genre_social', 'genre_news', 'genre_direct']].sum()
     genre_names = ['genre_social', 'genre_news', 'genre_direct']
     
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             'data': [
@@ -93,7 +90,7 @@ def index():
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
     
     # render web page with plotly graphs
-    return render_template('/templates/master.html', ids=ids, graphJSON=graphJSON)
+    return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
 
 # web page that handles user query and displays model results

@@ -1,7 +1,0 @@
-Best score: 0.33272859456418696
-Best parameter set: MultiOutputClassifier(estimator=MultinomialNB(alpha=1.0, class_prior=None,
-                                              fit_prior=True),
-                      n_jobs=None)
-mean_test_f1_weighted: 0.33272859456418696
-mean_test_f1_micro: 0.4816831763432156
-mean_test_f1_samples:0.45392481501338294

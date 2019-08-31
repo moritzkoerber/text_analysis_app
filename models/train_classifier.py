@@ -2,11 +2,9 @@ from sklearn.pipeline import Pipeline
 import sys
 import argparse
 import pandas as pd
-import numpy as np
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sqlalchemy import create_engine
-from sklearn.metrics import multilabel_confusion_matrix
-from sklearn.metrics import f1_score, make_scorer, classification_report
+from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
 import string
 from nltk.tokenize import word_tokenize
@@ -19,7 +17,6 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 import pickle
 from nltk.stem.wordnet import WordNetLemmatizer
-#from skmultilearn.problem_transform import ClassifierChain
 from sklearn.compose import ColumnTransformer
 
 nltk.download('punkt')
@@ -59,7 +56,6 @@ def tokenize(text):
     text = text.lower().strip()
     text = word_tokenize(text)
     text = list(set(text) - rm)
-    #text = [SnowballStemmer('english').stem(w) for w in text]
     text = [WordNetLemmatizer().lemmatize(w) for w in text]
     return text
 
@@ -83,27 +79,28 @@ def build_model():
         # {'clf': [RandomForestClassifier()],
         #  'clf__n_estimators': [5, 50, 100, 250],
         #  'clf__max_depth': [5, 8, 10],
-        #  'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-        #  'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+        # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+        # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
         #  'clf__random_state':[42]
         #  },
         # {'clf': [MultiOutputClassifier(LinearSVC())],
-        # 'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
-        # 'clf__estimator__max_iter': [5000],
+        #  'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
+        #  'clf__estimator__max_iter': [5000],
         # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
         # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
         # 'clf__estimator__random_state': [42]
         # },
         {'clf': [MultiOutputClassifier(LogisticRegression())],
-         'clf__estimator__penalty': ['l1', 'l2'],
-         'clf__estimator__C': [0.01, 0.1, 1, 10, 100],
-         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
-         },
+         # 'clf__estimator__penalty': ['l1', 'l2'],
+         # 'clf__estimator__C': [0.01, 0.1, 1, 10, 100],
+         # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+         'clf__estimator__random_state': [42]
+         }
         # {'clf': [MultiOutputClassifier(MultinomialNB())]
-        #  # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-        #  # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
-        #  }
+        # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+        # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
+        # }
     ]
 
     rkf = RepeatedKFold(
@@ -123,36 +120,47 @@ def build_model():
     return cv
 
 
-def evaluate_gridsearch(model):
+def evaluate_model(model, X, Y):
     df = pd.DataFrame.from_dict(model.cv_results_)
+    print('##### Cross-validation results on validation set #####')
     print('Best score:{}'.format(model.best_score_))
     print('Best parameters set:{}'.format(
         model.best_estimator_.get_params()['clf']))
-    print('mean_test_f1_weighted:{}'.format(df['mean_test_f1_weighted']))
-    print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
-    print('mean_test_f1_micro:{}'.format(df['mean_test_f1_micro']))
-    print('mean_test_f1_samples:{}'.format(df['mean_test_f1_samples']))
+    print('mean_test_f1_weighted: {}'.format(df['mean_test_f1_weighted']))
+    print('mean_test_f1_micro: {}'.format(df['mean_test_f1_micro']))
+    print('mean_test_f1_micro: {}'.format(df['mean_test_f1_micro']))
+    print('mean_test_f1_samples: {}\n'.format(df['mean_test_f1_samples']))
+    print('##### Scoring on test set #####')
+    preds = model.predict(X)
+    print(
+        'Test set classification report: {}'.format(
+            classification_report(
+                Y, preds, target_names=list(
+                    Y.columns))))
 
-    with open('./models/results.txt', 'w') as w:
+    with open('./models/cv_results.txt', 'w') as w:
         w.write(
+            '##### Cross-validation results on validation set #####\n'
+            '\n'
             'Best score: {}\n'
             'Best parameter set: {}\n'
             'mean_test_f1_weighted: {}\n'
             'mean_test_f1_micro: {}\n'
-            'mean_test_f1_samples:{}\n'.format(
+            'mean_test_f1_samples:{}\n'
+            '\n'
+            '\n'
+            '##### Scoring on test set #####\n'
+            '\n'
+            'Test set classification report: \n'
+            '{}\n'.format(
                 model.best_score_,
                 model.best_estimator_.get_params()['clf'],
                 df['mean_test_f1_weighted'].values[0],
                 df['mean_test_f1_micro'].values[0],
-                df['mean_test_f1_samples'].values[0])
+                df['mean_test_f1_samples'].values[0],
+                str(classification_report(Y, preds, target_names=list(Y.columns))))
         )
-
-
-def evaluate_model(model, X, Y):
-    preds = model.predict(X)
-    print(f1_score(Y, preds, average=None))
-    print(classification_report(Y, preds, target_names=list(Y.columns)))
-
+    print('##### Results stored in ./models/results.txt #####')
 
 def save_model(model, model_filepath):
     with open(model_filepath, 'wb') as f:
@@ -178,9 +186,6 @@ def main():
 
         print('Training model...')
         model.fit(X_train, y_train)
-
-        print('Evaluating grid search...')
-        evaluate_gridsearch(model)
 
         print('Evaluating model...')
         evaluate_model(model, X_test, y_test)
