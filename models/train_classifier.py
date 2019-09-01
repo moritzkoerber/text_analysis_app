@@ -1,23 +1,24 @@
-from sklearn.pipeline import Pipeline
-import sys
 import argparse
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
-from sqlalchemy import create_engine
-from sklearn.metrics import classification_report
-from sklearn.linear_model import LogisticRegression
+import pickle
 import string
-from nltk.tokenize import word_tokenize
+import sys
+
 import nltk
+import pandas as pd
 from nltk.corpus import stopwords
+from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, RepeatedKFold, train_test_split
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-import pickle
-from nltk.stem.wordnet import WordNetLemmatizer
-from sklearn.compose import ColumnTransformer
+from sqlalchemy import create_engine
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -42,6 +43,17 @@ rm = set(stopwords.words('english'))
 
 
 def load_data(database_filepath):
+    """
+    Loads a pandas DataFrame from a sqlite database
+
+    Args:
+    database_filepath: path of the sqlite database
+
+    Returns:
+    X: features (data frame)
+    Y: target categories (data frame)
+    category_names: index list with names of categories
+    """
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql_table('data', engine)
     X = df[['message', 'len']]
@@ -52,6 +64,15 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Tokenizes input text
+
+    Args:
+    text: text data as str
+
+    Returns:
+    text: tokenized text
+    """
     text = text.translate(str.maketrans('', '', string.punctuation))
     text = text.lower().strip()
     text = word_tokenize(text)
@@ -70,37 +91,43 @@ preprocessor = ColumnTransformer(
 
 
 def build_model():
+    """
+    Creates a pipeline for model training including a GridSearchCV object.
+
+    Returns:
+    cv: GridSearchCV object
+    """
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('clf', RandomForestClassifier())
     ])
 
     parameters = [
-        # {'clf': [RandomForestClassifier()],
-        #  'clf__n_estimators': [5, 50, 100, 250],
-        #  'clf__max_depth': [5, 8, 10],
-        # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-        # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
-        #  'clf__random_state':[42]
-        #  },
-        # {'clf': [MultiOutputClassifier(LinearSVC())],
-        #  'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
-        #  'clf__estimator__max_iter': [5000],
-        # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-        # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
-        # 'clf__estimator__random_state': [42]
-        # },
-        {'clf': [MultiOutputClassifier(LogisticRegression())],
-         # 'clf__estimator__penalty': ['l1', 'l2'],
-         # 'clf__estimator__C': [0.01, 0.1, 1, 10, 100],
-         # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-         # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+        {'clf': [RandomForestClassifier()],
+         'clf__n_estimators': [5, 50, 100, 250],
+         'clf__max_depth': [5, 8, 10],
+         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+         'clf__random_state':[42]
+         },
+        {'clf': [MultiOutputClassifier(LinearSVC())],
+         'clf__estimator__C': [1.0, 10.0, 100.0, 1000.0],
+         'clf__estimator__max_iter': [5000],
+         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
          'clf__estimator__random_state': [42]
+         },
+        {'clf': [MultiOutputClassifier(LogisticRegression())],
+         'clf__estimator__penalty': ['l1', 'l2'],
+         'clf__estimator__C': [0.01, 0.1, 1, 10, 100],
+         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)],
+         'clf__estimator__random_state': [42]
+         },
+        {'clf': [MultiOutputClassifier(MultinomialNB())],
+         'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
+         'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
          }
-        # {'clf': [MultiOutputClassifier(MultinomialNB())]
-        # 'preprocessor__text__vecttext__max_df': [0.5, 0.75, 1.0],
-        # 'preprocessor__text__vecttext__ngram_range': [(1, 1), (1, 2)]
-        # }
     ]
 
     rkf = RepeatedKFold(
@@ -121,6 +148,16 @@ def build_model():
 
 
 def evaluate_model(model, X, Y):
+    """
+    Prints the results of the GridSearchCV function. Predicts a test set and prints a classification report.
+    Saves output in ./models/cv_results.txt.
+
+    Args:
+    model: trained sci-kit learn estimator
+    X: feature data frame for test set evaluation
+    Y: target data frame for test set evaluation
+    """
+
     df = pd.DataFrame.from_dict(model.cv_results_)
     print('##### Cross-validation results on validation set #####')
     print('Best score:{}'.format(model.best_score_))
@@ -162,12 +199,25 @@ def evaluate_model(model, X, Y):
         )
     print('##### Results stored in ./models/results.txt #####')
 
+
 def save_model(model, model_filepath):
+    """
+    Saves model as a .pkl file. Destination is set by model_filepath argument.
+
+    Args:
+    model: trained sci-kit learn estimator to save
+    model_filepath: destination for model save
+    """
+
     with open(model_filepath, 'wb') as f:
         pickle.dump(model, f)
 
 
 def main():
+    """
+    Loads the data, splits it into a train (80%) and test set (20%), trains the model with a GridSearchCV pipeline,
+    evaluates it on the test set, and saves the model as a .pkl file.
+    """
     if len(sys.argv) == 3:
         args = parser.parse_args()
 

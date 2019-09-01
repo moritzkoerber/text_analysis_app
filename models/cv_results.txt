@@ -1,70 +1,57 @@
 ##### Cross-validation results on validation set #####
 
-Best score: 0.5764229866956906
-Best parameter set: MultiOutputClassifier(estimator=LogisticRegression(C=1.0, class_weight=None,
-                                                   dual=False,
-                                                   fit_intercept=True,
-                                                   intercept_scaling=1,
-                                                   l1_ratio=None, max_iter=100,
-                                                   multi_class='warn',
-                                                   n_jobs=None, penalty='l2',
-                                                   random_state=42,
-                                                   solver='warn', tol=0.0001,
-                                                   verbose=0,
-                                                   warm_start=False),
+Best score: 0.33272859456418696
+Best parameter set: MultiOutputClassifier(estimator=MultinomialNB(alpha=1.0, class_prior=None,
+                                              fit_prior=True),
                       n_jobs=None)
-mean_test_f1_weighted: 0.5764229866956906
-mean_test_f1_micro: 0.6409977979632666
-mean_test_f1_samples:0.5107077780725523
+mean_test_f1_weighted: 0.33272859456418696
+mean_test_f1_micro: 0.4816831763432156
+mean_test_f1_samples:0.45392481501338294
+
+
 ##### Scoring on test set #####
 
-Test set f1 score: [0.89004863 0.64524949 0.         0.70856284 0.2867784  0.31137725
- 0.09022556 0.         0.14285714 0.62897527 0.72427184 0.60026918
- 0.27272727 0.10169492 0.03278689 0.17258883 0.43450479 0.20927467
- 0.06837607 0.18181818 0.3190184  0.16176471 0.         0.
- 0.         0.         0.01762115 0.74231678 0.58745875 0.54336735
- 0.07272727 0.76631079 0.16666667 0.06143345 0.53241032]
 Test set classification report: 
                         precision    recall  f1-score   support
 
-               related       0.84      0.95      0.89      3938
-               request       0.83      0.53      0.65       895
+               related       0.76      1.00      0.86      3938
+               request       0.76      0.02      0.05       895
                  offer       0.00      0.00      0.00        26
-           aid_related       0.76      0.66      0.71      2131
-          medical_help       0.67      0.18      0.29       422
-      medical_products       0.81      0.19      0.31       270
-     search_and_rescue       1.00      0.05      0.09       127
+           aid_related       0.69      0.72      0.71      2131
+          medical_help       0.00      0.00      0.00       422
+      medical_products       0.00      0.00      0.00       270
+     search_and_rescue       0.00      0.00      0.00       127
               security       0.00      0.00      0.00        88
-              military       0.48      0.08      0.14       155
-                 water       0.78      0.53      0.63       339
-                  food       0.86      0.63      0.72       595
-               shelter       0.82      0.47      0.60       470
-              clothing       0.80      0.16      0.27        73
-                 money       0.43      0.06      0.10       104
-        missing_people       1.00      0.02      0.03        60
-              refugees       0.65      0.10      0.17       171
-                 death       0.89      0.29      0.43       237
-             other_aid       0.60      0.13      0.21       695
-infrastructure_related       0.52      0.04      0.07       328
-             transport       0.71      0.10      0.18       240
-             buildings       0.88      0.19      0.32       267
-           electricity       0.79      0.09      0.16       122
+              military       0.00      0.00      0.00       155
+                 water       0.00      0.00      0.00       339
+                  food       0.75      0.01      0.01       595
+               shelter       0.00      0.00      0.00       470
+              clothing       0.00      0.00      0.00        73
+                 money       0.00      0.00      0.00       104
+        missing_people       0.00      0.00      0.00        60
+              refugees       0.00      0.00      0.00       171
+                 death       0.00      0.00      0.00       237
+             other_aid       0.00      0.00      0.00       695
+infrastructure_related       0.00      0.00      0.00       328
+             transport       0.00      0.00      0.00       240
+             buildings       0.00      0.00      0.00       267
+           electricity       0.00      0.00      0.00       122
                  tools       0.00      0.00      0.00        32
              hospitals       0.00      0.00      0.00        46
                  shops       0.00      0.00      0.00        22
            aid_centers       0.00      0.00      0.00        67
-  other_infrastructure       0.50      0.01      0.02       223
-       weather_related       0.86      0.66      0.74      1438
-                floods       0.91      0.43      0.59       411
-                 storm       0.71      0.44      0.54       486
-                  fire       1.00      0.04      0.07        53
-            earthquake       0.88      0.68      0.77       478
-                  cold       0.73      0.09      0.17       117
-         other_weather       0.53      0.03      0.06       276
-         direct_report       0.74      0.41      0.53      1021
+  other_infrastructure       0.00      0.00      0.00       223
+       weather_related       0.87      0.25      0.38      1438
+                floods       0.00      0.00      0.00       411
+                 storm       0.00      0.00      0.00       486
+                  fire       0.00      0.00      0.00        53
+            earthquake       1.00      0.01      0.02       478
+                  cold       0.00      0.00      0.00       117
+         other_weather       0.00      0.00      0.00       276
+         direct_report       0.70      0.02      0.04      1021
 
-             micro avg       0.81      0.55      0.65     16423
-             macro avg       0.63      0.24      0.30     16423
-          weighted avg       0.77      0.55      0.59     16423
-           samples avg       0.65      0.48      0.50     16423
+             micro avg       0.74      0.36      0.48     16423
+             macro avg       0.16      0.06      0.06     16423
+          weighted avg       0.49      0.36      0.34     16423
+           samples avg       0.70      0.39      0.45     16423
 
