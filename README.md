@@ -1,6 +1,6 @@
 # Classifying disaster response messages
 
-This repository contains a web app that classifies the content of messages that are usually sent during disasters such as earthquakes. Labels are, for example, 'medical' or 'request'.
+This repository contains a web app that classifies the content of messages that are usually sent during disasters such as earthquakes. Labels are, for example, *medical* or *request*.
 
 ## How to use the app
  
