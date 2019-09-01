@@ -132,7 +132,7 @@ def build_model():
 
     rkf = RepeatedKFold(
         n_splits=3,
-        n_repeats=1,
+        n_repeats=2,
         random_state=42
     )
 
